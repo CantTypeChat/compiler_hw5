@@ -6,6 +6,50 @@
 #include"y.tab.h"
 #define YYSTYPE long long
 #define YYSTYPE_IS_DECLARED 1
+
+    
+extern void prt_program(A_NODE *node, int s);    
+extern char *yytext;
+A_TYPE *int_type, *char_type, *void_type, *float_type, *string_type;
+A_NODE *root;
+A_ID* current_id=NIL;
+int syntax_err=0;
+int line_no=1;
+int current_level=0;
+A_NODE *makeNode(NODE_NAME, A_NODE *, A_NODE *, A_NODE *);
+A_NODE *makeNodeList(NODE_NAME, A_NODE *, A_NODE *);
+A_ID *makeIdentifier(char *);
+A_ID *makeDummyIdentifier();
+A_TYPE *makeType(T_KIND);
+A_SPECIFIER *makeSpecifier(A_TYPE *, S_KIND);
+A_ID *searchIdentifier(char *, A_ID*);
+A_ID *searchIdentifierAtCurrentLevel(char *, A_ID*);
+A_SPECIFIER *updateSpecifier(A_SPECIFIER *, A_TYPE *, S_KIND);
+void checkForwardReference();
+void setDefaultSpecifier(A_SPECIFIER *);
+A_ID *linkDeclaratorList(A_ID*, A_ID*);
+A_ID *getIdentifierDeclared(char *);
+A_TYPE *getTypeOfStructOrEnumRefIdentifier(T_KIND, char *, ID_KIND);
+A_ID *setDeclaratorInit(A_ID*, A_NODE *);
+A_ID *setDeclaratorKind(A_ID*, ID_KIND);
+A_ID *setDeclaratorType(A_ID*, A_TYPE *);
+A_ID *setDeclaratorTypeAndKind(A_ID*, A_TYPE *, ID_KIND);
+A_ID *setDeclaratorListSpecifier(A_ID*, A_SPECIFIER *);
+A_ID *setFunctionDeclaratorSpecifier(A_ID*, A_SPECIFIER *);
+A_ID *setFunctionDeclaratorBody(A_ID*, A_NODE *);
+A_ID *setParameterDeclaratorSpecifier(A_ID*, A_SPECIFIER *);
+A_ID *setStructDeclaratorListSpecifier(A_ID*, A_TYPE *);
+A_TYPE *setTypeNameSpecifier(A_TYPE *, A_SPECIFIER *);
+A_TYPE *setTypeElementType(A_TYPE *, A_TYPE *);
+A_TYPE *setTypeField(A_TYPE *, A_ID *);
+A_TYPE *setTypeExpr(A_TYPE *, A_NODE *);
+A_TYPE *setTypeAndStructOrEnumIdentifier(T_KIND, char *, ID_KIND);
+BOOLEAN isNotSameFormalParameters(A_ID *, A_ID *);
+BOOLEAN isNotSameType(A_TYPE *, A_TYPE *);
+BOOLEAN isPointerOrArrayType(A_TYPE *);
+void syntax_error(int, char*);
+void initialize();
+    
 %}
 /*
 %union {
@@ -23,7 +67,6 @@
 }
 */
 %token AUTO_SYM BREAK_SYM CASE_SYM CONTINUE_SYM DEFAULT_SYM DO_SYM ELSE_SYM ENUM_SYM FOR_SYM IF_SYM RETURN_SYM SIZEOF_SYM STRUCT_SYM SWITCH_SYM TYPEDEF_SYM UNION_SYM WHILE_SYM PLUSPLUS MINUSMINUS ARROW LSS GTR LEQ GEQ EQL NEQ AMPAMP BARBAR AMP BAR DOTDOTDOT DOT LP RP LB RB LR RR COLON COMMA EXCL STAR SLASH PERCENT PLUS MINUS ASSIGN INTEGER_CONSTANT FLOAT_CONSTANT STRING_LITERAL CHARACTER_CONSTANT TILDE BXOR SEMICOLON STATIC_SYM CONST_SYM VOLATILE_SYM TYPE_IDENTIFIER IDENTIFIER LSSLSS GTRGTR GTR QUESTION GOTO_SYM
-
 %%
 program             :   translation_unit {root=makeNode(N_PROGRAM, 0, $1, 0); checkForwardReference();}
                     ;
@@ -180,7 +223,11 @@ labeled_statement       : CASE_SYM constant_expression COLON statement {$$=makeN
                         | DEFAULT_SYM COLON statement {$$=makeNode(N_STMT_LABEL_DEFAULT,0,$3,0);}
                         ;
 
-compound_statement      : LR {$$=current_id; current_level++;} declaration_list statement_list_opt RR {checkForwardReference(); current_level--; current_id=$2;}
+compound_statement      : LR {$$=current_id; current_level++;} declaration_list_opt statement_list_opt RR {checkForwardReference(); current_level--; current_id=$2; $$=makeNode(N_STMT_COMPOUND,$3,0,$4);}
+                        ;
+
+declaration_list_opt    : /* empty */ {$$=NIL;}
+                        | declaration_list {$$=$1;}
                         ;
 
 declaration_list        : declaration {$$=$1;}
@@ -221,7 +268,7 @@ jump_statement          : RETURN_SYM expression_opt SEMICOLON {$$=makeNode(N_STM
                         ;
 
 primary_expression      : IDENTIFIER {$$=makeNode(N_EXP_IDENT,0,getIdentifierDeclared($1),0);}
-                        | INTEGER_CONSTANT {$$=makeNode(N_EXP_INT_CONST,0,$1,0}
+                        | INTEGER_CONSTANT {$$=makeNode(N_EXP_INT_CONST,0,$1,0);}
                         | FLOAT_CONSTANT {$$=makeNode(N_EXP_FLOAT_CONST,0,$1,0);}
                         | CHARACTER_CONSTANT {$$=makeNode(N_EXP_CHAR_CONST,0,$1,0);}
                         | STRING_LITERAL {$$=makeNode(N_EXP_STRING_LITERAL,0,$1,0);}
@@ -241,7 +288,7 @@ arg_expression_list_opt : /* empty */ {$$=makeNode(N_ARG_LIST_NIL,0,0,0);}
                         | arg_expression_list {$$=$1;}
                         ;
 
-arg_expression_list     : assignment_expression {$$=makeNode(N_ARG_LIST,$1,0,makeNode(N_ARG_NIL,0,0,0));}
+arg_expression_list     : assignment_expression {$$=makeNode(N_ARG_LIST,$1,0,makeNode(N_ARG_LIST_NIL,0,0,0));}
                         | arg_expression_list COMMA assignment_expression {$$=makeNodeList(N_ARG_LIST,$1,$3);}
                         ;
 
@@ -329,46 +376,6 @@ expression                  : comma_expression {$$=$1;}
 constant_expression         : expression {$$=$1;}
 
 %%
-extern char *yytext;
-A_TYPE *int_type, *char_type, *void_type, *float_type, *string_type;
-A_NODE *root;
-A_ID* current_id=NIL;
-int syntax_err=0;
-int line_no=1;
-int current_level=0;
-A_NODE *makeNode(NODE_NAME, A_NODE *, A_NODE *, A_NODE *);
-A_NODE *makeNodeList(NODE_NAME, A_NODE *, A_NODE *);
-A_ID *makeIdentifier(char *);
-A_ID *makeDummyIdentifier();
-A_TYPE *makeType(T_KIND);
-A_SPECIFIER *makeSpecifier(A_TYPE *, S_KIND);
-A_ID *searchIdentifier(char *, A_ID*);
-A_ID *searchIdentifierAtCurrentLevel(char *, A_ID*);
-A_SPECIFIER *updateSpecifier(A_SPECIFIER *, A_TYPE *, S_KIND);
-void checkForwardReference();
-void setDefaultSpecifier(A_SPECIFIER *);
-A_ID *linkDeclaratorList(A_ID*, A_ID*);
-A_ID *getIdentifierDeclared(char *);
-A_TYPE *getTypeOfStructOrEnumRefIdentifier(T_KIND, char *, ID_KIND);
-A_ID *setDeclaratorInit(A_ID*, A_NODE *);
-A_ID *setDeclaratorKind(A_ID*, ID_KIND);
-A_ID *setDeclaratorType(A_ID*, A_TYPE *);
-A_ID *setDeclaratorTypeAndKind(A_ID*, A_TYPE *, ID_KIND);
-A_ID *setDeclaratorListSpecifier(A_ID*, A_SPECIFIER *);
-A_ID *setFunctionDeclaratorSpecifier(A_ID*, A_SPECIFIER *);
-A_ID *setFunctionDeclaratorBody(A_ID*, A_NODE *);
-A_ID *setParameterDeclaratorSpecifier(A_ID*, A_SPECIFIER *);
-A_ID *setStructDeclaratorListSpecifier(A_ID*, A_TYPE *);
-A_TYPE *setTypeNameSpecifier(A_TYPE *, A_SPECIFIER *);
-A_TYPE *setTypeElementType(A_TYPE *, A_TYPE *);
-A_TYPE *setTypeField(A_TYPE *, A_ID *);
-A_TYPE *setTypeExpr(A_TYPE *, A_NODE *);
-A_TYPE *setTypeAndStructOrEnumIdentifier(T_KIND, char *, ID_KIND);
-BOOLEAN isNotSameFormalParameters(A_ID *, A_ID *);
-BOOLEAN isNotSameType(A_TYPE *, A_TYPE *);
-BOOLEAN isPointerOrArrayType(A_TYPE *);
-void syntax_error(int, char*);
-void initialize();
 
 A_NODE *makeNode (NODE_NAME n, A_NODE *a, A_NODE *b, A_NODE *c) {
     A_NODE *m;
@@ -406,7 +413,7 @@ A_NODE *makeNodeList(NODE_NAME n, A_NODE *a, A_NODE *b) {
     return (a);
 }
 
-A_ID* makeIdentifier(char *s) {
+A_ID *makeIdentifier(char *s) {
     A_ID *id;
     id = malloc(sizeof(A_ID));
     id->name = s;
@@ -736,13 +743,44 @@ A_ID *setParameterDeclaratorSpecifier(A_ID *id, A_SPECIFIER *p) {
         syntax_error(12, id->name);
     
     // TODO: consider either allow parameter like 'void* a' or not
-    if(p->stor || p->type == void_type)
+    if(p->stor)
         syntax_error(14, NIL);
+
+
+    // if parameter is void, param_field should be NIL.
+    // TODO: size == 0 if and only if type == void
+    if(p->type->size == 0) {
+        return NIL;
+    }
     setDefaultSpecifier(p);
     id = setDeclaratorElementType(id, p->type);
     id->kind = ID_PARM;
     return (id);
 }
+
+
+
+A_ID *setStructDeclaratorListSpecifier(A_ID *id, A_TYPE *t) {
+    A_ID *a;
+    a = id;
+    while(a) {
+        if (searchIdentifierAtCurrentLevel(a->name, a->prev))
+            syntax_error(12, a->name);
+        a = setDeclaratorElementType(a, t);
+        a->kind = ID_FIELD;
+        a = a->link;
+    }
+    return (id);
+}
+
+A_TYPE *setTypeNameSpecifier(A_TYPE *t, A_SPECIFIER *p) {
+    if (p->stor)
+        syntax_error(20, NIL);
+    setDefaultSpecifier(p);
+    t=setTypeElementType(t, p->type);
+    return (t);
+}
+
 
 // link the type record s with
 // the end of the type record t.
@@ -836,6 +874,10 @@ BOOLEAN isNotSameType(A_TYPE *t1, A_TYPE *t2) {
         return (t1!=t2);
 }
 
+BOOLEAN isPointerOrArrayType(A_TYPE *t1) {
+    return t1->kind == T_POINTER || t1->kind == T_ARRAY;
+}
+
 void initialize() {
     // set default data type
     int_type = setTypeAndKindOfDeclarator(
@@ -922,6 +964,9 @@ void initialize() {
             ID_FUNC);
 }
 
+
+
+
 void syntax_error(int i, char *s) {
     syntax_err++;
     printf("line %d: syntax error: ", line_no);
@@ -963,8 +1008,10 @@ int yyerror(char* s)
 
 int main(void)
 {
+    initialize();
     yyparse();
     printf("success!\n");
+    prt_program(root, 0);
     return 0;
 }
 

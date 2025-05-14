@@ -9,13 +9,19 @@ float				{digit}+\.{digit}*
 identifier  {letter}({letter}|{digit})*
 integer_literal    [0-9]|[1-9][0-9]+
 %{
+#include<stdlib.h>
+#include<string.h>
+#include "type.h"
 #include "y.tab.h"
-extern int yylval;
+extern int line_no;
+extern long long yylval;
+extern A_ID* current_id;
 int checkIdentifier(char *s);
+extern A_ID *searchIdentifier(char *, A_ID*);
 %}
 %%
 {ws}            { }
-{line}          { }
+{line}          { line_no++; }
 
 "auto"          { return(AUTO_SYM); }
 "break"         { return(BREAK_SYM); }
@@ -82,22 +88,25 @@ int checkIdentifier(char *s);
 "const"                    { return(CONST_SYM); }
 "goto"                     { return(GOTO_SYM); }
 
-{integer_literal}                   { return(INTEGER_CONSTANT); }
-{float}                    { return(FLOAT_CONSTANT); }
-{identifier}               { return(checkIdentifier(yytext));}
+{integer_literal}                   { yylval = atoi(yytext); return(INTEGER_CONSTANT); }
+{float}                    { yylval = (char*) strdup(yytext); return(FLOAT_CONSTANT); }
+{identifier}               { yylval = (char*) strdup(yytext); return(checkIdentifier(yytext));}
 \"([^\"\n]|\\[\"\n])*\"               { return(STRING_LITERAL);}
 \'([^'\n]|\\[\\\'nt])\'       { return(CHARACTER_CONSTANT);}
 %%
 
 int checkIdentifier(char *s) {
-    char *table[] = {"int", "float", "char", "void"};
-    int i = 0;
-    for(int i = 0; i < 4; i++) {
-        if(strcmp(table[i], s) == 0) {
-            return TYPE_IDENTIFIER;
-        }
-    }
-    return IDENTIFIER;
+    A_ID *a;
+    A_ID *b = current_id;
+    a = searchIdentifier(s, b);
+    
+    if(a == NIL)
+        return IDENTIFIER;
+    else if(a->kind == ID_TYPE) {
+        yylval = a->type;
+        return TYPE_IDENTIFIER;
+    } else
+        return IDENTIFIER;
 }
 
 int yywrap(void) {
