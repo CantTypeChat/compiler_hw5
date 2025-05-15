@@ -8,7 +8,8 @@
 #define YYSTYPE_IS_DECLARED 1
 
     
-extern void prt_program(A_NODE *node, int s);    
+extern void prt_A_ID_LIST(A_ID *id, int s);
+extern void print_ast(A_NODE *node);    
 extern char *yytext;
 A_TYPE *int_type, *char_type, *void_type, *float_type, *string_type;
 A_NODE *root;
@@ -32,6 +33,7 @@ A_ID *getIdentifierDeclared(char *);
 A_TYPE *getTypeOfStructOrEnumRefIdentifier(T_KIND, char *, ID_KIND);
 A_ID *setDeclaratorInit(A_ID*, A_NODE *);
 A_ID *setDeclaratorKind(A_ID*, ID_KIND);
+A_ID *setDeclaratorElementType(A_ID *, A_TYPE *);
 A_ID *setDeclaratorType(A_ID*, A_TYPE *);
 A_ID *setDeclaratorTypeAndKind(A_ID*, A_TYPE *, ID_KIND);
 A_ID *setDeclaratorListSpecifier(A_ID*, A_SPECIFIER *);
@@ -39,7 +41,7 @@ A_ID *setFunctionDeclaratorSpecifier(A_ID*, A_SPECIFIER *);
 A_ID *setFunctionDeclaratorBody(A_ID*, A_NODE *);
 A_ID *setParameterDeclaratorSpecifier(A_ID*, A_SPECIFIER *);
 A_ID *setStructDeclaratorListSpecifier(A_ID*, A_TYPE *);
-A_TYPE *setTypeNameSpecifier(A_TYPE *, A_SPECIFIER *);
+A_SPECIFIER *setTypeNameSpecifier(A_TYPE *, A_SPECIFIER *);
 A_TYPE *setTypeElementType(A_TYPE *, A_TYPE *);
 A_TYPE *setTypeField(A_TYPE *, A_ID *);
 A_TYPE *setTypeExpr(A_TYPE *, A_NODE *);
@@ -82,7 +84,7 @@ function_definition :   declaration_specifiers declarator {$$=setFunctionDeclara
                     |   declarator {$$=setFunctionDeclaratorSpecifier($1,makeSpecifier(int_type,0));} compound_statement {$$=setFunctionDeclaratorBody($2,$3);}
                     ;
 
-declaration         :   declaration_specifiers init_declarator_list SEMICOLON {$$=setDeclaratorListSpecifier($2,$1);}
+declaration         :   declaration_specifiers init_declarator_list_opt SEMICOLON {$$=setDeclaratorListSpecifier($2,$1);}
                     ;
 
 declaration_specifiers: type_specifier {$$=makeSpecifier($1,0);}
@@ -96,13 +98,17 @@ storage_class_specifier: AUTO_SYM {$$=S_AUTO;}
                        | TYPEDEF_SYM {$$=S_TYPEDEF;}
                        ;
 
+init_declarator_list_opt        : /* empty */ {$$=NIL;}
+                                | init_declarator_list {$$=$1;}
+                                ;
+
 
 init_declarator_list   : init_declarator {$$=$1;}
                        | init_declarator_list COMMA init_declarator {$$=linkDeclaratorList($1, $3);}
                        ;
 
-init_declarator        : declarator
-                       | declarator ASSIGN initializer
+init_declarator        : declarator {$$=$1;}
+                       | declarator ASSIGN initializer {$$=setDeclaratorInit($1, $3);}
                        ;
 
 type_specifier         : struct_specifier {$$=$1;}
@@ -110,7 +116,7 @@ type_specifier         : struct_specifier {$$=$1;}
                        | TYPE_IDENTIFIER {$$=$1;}
                        ;
 
-struct_specifier        : struct_or_union IDENTIFIER {$$=setTypeStructOrEnumIdentifier($1, $2, ID_STRUCT);} LR {$$ = current_id; current_level++;} struct_declaration_list RR {checkForwardReference(); $$=setTypeField($3, $5); current_level--; current_id=$5;}
+struct_specifier        : struct_or_union IDENTIFIER {$$=setTypeStructOrEnumIdentifier($1, $2, ID_STRUCT);} LR {$$ = current_id; current_level++;} struct_declaration_list RR {checkForwardReference(); $$=setTypeField($3, $6); current_level--; current_id=$5;}
                         | struct_or_union {$$=makeType($1);} LR {$$=current_id; current_level++;} struct_declaration_list RR {checkForwardReference(); $$=setTypeField($2, $5); current_level--; current_id=$4;} 
                         | struct_or_union IDENTIFIER {$$=getTypeOfStructOrEnumRefIdentifier($1,$2,ID_STRUCT);}
                         ;
@@ -131,12 +137,12 @@ specifier_qualifier_list: type_specifier
                         ;
 
 struct_declarator_list  : struct_declarator {$$=$1;}
-                        | struct_declarator_list COMMA struct_declarator {$$=linkDeclaratorList($1,$2);}
+                        | struct_declarator_list COMMA struct_declarator {$$=linkDeclaratorList($1,$3);}
                         ;
 
 struct_declarator       : declarator {$$=$1;}
                         | COLON constant_expression {$$=setDeclaratorInit(makeDummyIdentifier(), $2);}
-                        | declarator COLON constant_expression {$$=setDeclaratorInit($1, $3);} //
+                        | declarator COLON constant_expression {$$=setDeclaratorInit($1, makeNode(N_INIT_LIST_ONE, 0, $3, 0));} //
                         ;
 
 enum_specifier          : ENUM_SYM IDENTIFIER {$$=setTypeStructOrEnumIdentifier(T_ENUM,$2,ID_ENUM);} LR enumerator_list RR {$$=setTypeField($3,$5);}
@@ -190,7 +196,7 @@ parameter_declaration   : declaration_specifiers declarator  {$$=setParameterDec
 abstract_declarator_opt : /* empty */ {$$=0;}
                         | abstract_declarator {$$=$1;}
                         ;
-abstract_declarator     : pointer {$$=makeType(T_POINTER);}
+abstract_declarator     : pointer {$$=$1;}
                         | direct_abstract_declarator {$$=$1;}
                         | pointer direct_abstract_declarator {$$=setTypeElementType($2,makeType(T_POINTER));}
                         ;
@@ -202,7 +208,7 @@ direct_abstract_declarator : LP abstract_declarator RP {$$=$2;}
                            | direct_abstract_declarator LP parameter_type_list_opt RP {$$=setTypeElementType($1,setTypeExpr(makeType(T_FUNC),$3));}
                            ;
 
-initializer             :   expression {$$=$1;} 
+initializer             :   constant_expression {$$=makeNode(N_INIT_LIST_ONE, 0, $1, 0);} 
                         |   LR initializer_list RR {$$=$2;}
                         |   LR initializer_list COMMA RR {$$=$2;}
                         ;
@@ -572,6 +578,12 @@ A_ID *linkDeclaratorList(A_ID *id1, A_ID *id2) {
     while(m->link)
         m=m->link;
     m->link = id2;
+    /*
+    if (id1->kind == ID_STRUCT)
+        prt_A_ID(id1);
+    if (id2->kind == ID_STRUCT)
+        prt_A_ID(id2);
+        */
     return (id1);
 }
 
@@ -600,13 +612,12 @@ A_TYPE *getTypeOfStructOrEnumRefIdentifier(T_KIND k, char *s, ID_KIND kk) {
     A_ID *id;
     id = searchIdentifier(s, current_id);
 
-    // if there is a prototype with same name,
-    // return cp->type. (do not check if complete or not)
+    // if there is a prototype(same kind && same type-kind) with same name,
+    // return cp->type. (do not check either complete or not)
     if (id) {
-        if (id -> kind == kk && id ->type->kind == k)
+        if (id -> kind == kk && id ->type->kind == k) {
             return (id->type);
-        // error when analyzing "int a;" after "double a;"
-        else
+        } else
             syntax_error(11, s);
     }
 
@@ -631,7 +642,7 @@ A_ID *setDeclaratorInit(A_ID *id, A_NODE *n) {
 A_ID *setDeclaratorKind(A_ID *id, ID_KIND k) {
     A_ID *a;
     a = searchIdentifierAtCurrentLevel(id->name, id->prev);
-    if (a)
+    if (a && a->kind == k) // typedef problem
         syntax_error(12, id->name);
     id->kind = k;
     return (id);
@@ -645,11 +656,11 @@ A_ID *setDeclaratorType(A_ID *id, A_TYPE *t) {
 // link t to the end of the id's type record.
 A_ID *setDeclaratorElementType(A_ID *id, A_TYPE *t) {
     A_TYPE *tt;
-    if (id->type == NIL)
+    if (id->type == NIL) {
         id->type = t;
-    else {
+    } else {
         tt = id->type;
-        while (tt->element_type)
+        while (tt && tt->element_type)
             tt=tt->element_type;
         tt->element_type = t;
     }
@@ -766,6 +777,7 @@ A_ID *setStructDeclaratorListSpecifier(A_ID *id, A_TYPE *t) {
     while(a) {
         if (searchIdentifierAtCurrentLevel(a->name, a->prev))
             syntax_error(12, a->name);
+        // printf("a->name: %s\n", a->name);
         a = setDeclaratorElementType(a, t);
         a->kind = ID_FIELD;
         a = a->link;
@@ -773,12 +785,13 @@ A_ID *setStructDeclaratorListSpecifier(A_ID *id, A_TYPE *t) {
     return (id);
 }
 
-A_TYPE *setTypeNameSpecifier(A_TYPE *t, A_SPECIFIER *p) {
+A_SPECIFIER *setTypeNameSpecifier(A_TYPE *t, A_SPECIFIER *p) {
     if (p->stor)
         syntax_error(20, NIL);
     setDefaultSpecifier(p);
-    t=setTypeElementType(t, p->type);
-    return (t);
+    p->type = setTypeElementType(t, p->type);
+    
+    return (p);
 }
 
 
@@ -816,9 +829,10 @@ A_TYPE *setTypeExpr(A_TYPE *t, A_NODE *n) {
 // the prototype's field in the line 2 should be NIL.
 A_TYPE *setTypeStructOrEnumIdentifier(T_KIND k, char *s, ID_KIND kk) {
     A_TYPE *t;
-    A_ID *id, *a;
+    A_ID *id, *a, *b;
+    b = current_id;
 
-    a = searchIdentifierAtCurrentLevel(s, current_id);
+    a = searchIdentifierAtCurrentLevel(s, b);
     if (a) {
         if (a->kind == kk && a->type->kind == k) {
             if (a->type->field)
@@ -890,6 +904,7 @@ void initialize() {
             makeType(T_ENUM), ID_TYPE, makeIdentifier("void"));
 
     string_type = setTypeElementType(makeType(T_POINTER), char_type);
+
     int_type->size = 4;
     int_type->check = TRUE;
 
@@ -1011,7 +1026,7 @@ int main(void)
     initialize();
     yyparse();
     printf("success!\n");
-    prt_program(root, 0);
+    print_ast(root);
     return 0;
 }
 

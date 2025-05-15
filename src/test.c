@@ -1,9 +1,6 @@
-int a;
-int b;
-float c;
-float d;
-int main();
-
 int main() {
-    return a;
+    int a = 10;
+    float dsf = (int) 3.2;
+    return 0;
 }
+

@@ -104,6 +104,7 @@ int checkIdentifier(char *s) {
         return IDENTIFIER;
     else if(a->kind == ID_TYPE) {
         yylval = a->type;
+        printf("type identifier: %s\n", a->name);
         return TYPE_IDENTIFIER;
     } else
         return IDENTIFIER;

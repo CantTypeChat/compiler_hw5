@@ -165,10 +165,10 @@ void prt_expression(A_NODE *node, int s)
 		prt_expression(node->clink, s+1);
    		break;
 	   case N_EXP_SIZE_TYPE :
-		prt_A_TYPE(node->clink, s+1);
+		prt_A_TYPE(((A_SPECIFIER*) node->clink)->type, s+1);
    		break;
 	   case N_EXP_CAST :
-		prt_A_TYPE(node->llink, s+1);
+		prt_A_TYPE(((A_SPECIFIER*) node->llink)->type, s+1);
 		prt_expression(node->rlink, s+1);
    		break;
 	   case N_EXP_MUL :
@@ -316,9 +316,9 @@ void prt_A_TYPE(A_TYPE *t, int s)
 	else if (t==char_type) 
 		printf("(char %d)\n",t->size);
 	else if (t==void_type)
-		printf("(void)");
+		printf("(void)\n");
 	else if (t->kind==T_NULL)
-		printf("(null)");
+		printf("(null)\n");
 	else if (t->prt)
 		printf("(DONE:%x)\n",t);
 	else 
@@ -342,7 +342,7 @@ void prt_A_TYPE(A_TYPE *t, int s)
 			if (t->expr)
 				prt_expression(t->expr,s+2);
 			else 
-				print_space(s+2); printf("(none)\n");
+                                {print_space(s+2); printf("(none)\n");}
 			print_space(s); printf("|  ELEMENT_TYPE\n");
 			prt_A_TYPE(t->element_type,s+2);
 			break;
