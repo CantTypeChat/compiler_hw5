@@ -7,8 +7,6 @@
 #define YYSTYPE long long
 #define YYSTYPE_IS_DECLARED 1
 
-    
-extern void prt_A_ID_LIST(A_ID *id, int s);
 extern void print_ast(A_NODE *node);    
 extern char *yytext;
 A_TYPE *int_type, *char_type, *void_type, *float_type, *string_type;
@@ -41,17 +39,20 @@ A_ID *setFunctionDeclaratorSpecifier(A_ID*, A_SPECIFIER *);
 A_ID *setFunctionDeclaratorBody(A_ID*, A_NODE *);
 A_ID *setParameterDeclaratorSpecifier(A_ID*, A_SPECIFIER *);
 A_ID *setStructDeclaratorListSpecifier(A_ID*, A_TYPE *);
-A_SPECIFIER *setTypeNameSpecifier(A_TYPE *, A_SPECIFIER *);
+A_TYPE *setTypeNameSpecifier(A_TYPE *, A_SPECIFIER *);
 A_TYPE *setTypeElementType(A_TYPE *, A_TYPE *);
 A_TYPE *setTypeField(A_TYPE *, A_ID *);
 A_TYPE *setTypeExpr(A_TYPE *, A_NODE *);
 A_TYPE *setTypeAndStructOrEnumIdentifier(T_KIND, char *, ID_KIND);
 BOOLEAN isNotSameFormalParameters(A_ID *, A_ID *);
+BOOLEAN isVaArgs(A_ID*);
 BOOLEAN isNotSameType(A_TYPE *, A_TYPE *);
 BOOLEAN isPointerOrArrayType(A_TYPE *);
 void syntax_error(int, char*);
 void initialize();
-    
+
+A_TYPE *getTypeFromSpecifier(A_SPECIFIER *);
+
 %}
 /*
 %union {
@@ -141,7 +142,7 @@ struct_declarator_list  : struct_declarator {$$=$1;}
                         ;
 
 struct_declarator       : declarator {$$=$1;}
-                        | COLON constant_expression {$$=setDeclaratorInit(makeDummyIdentifier(), $2);}
+                        | COLON constant_expression {$$=setDeclaratorInit(makeDummyIdentifier(), makeNode(N_INIT_LIST_ONE, 0, $2, 0));}
                         | declarator COLON constant_expression {$$=setDeclaratorInit($1, makeNode(N_INIT_LIST_ONE, 0, $3, 0));} //
                         ;
 
@@ -205,7 +206,7 @@ direct_abstract_declarator : LP abstract_declarator RP {$$=$2;}
                            | LB constant_expression_opt RB  {$$=setTypeExpr(makeType(T_ARRAY),$2);}
                            | LP parameter_type_list_opt RP {$$=setTypeExpr(makeType(T_FUNC),$2);}
                            | direct_abstract_declarator LB constant_expression_opt RB {$$=setTypeElementType($1,setTypeExpr(makeType(T_ARRAY),$3));}
-                           | direct_abstract_declarator LP parameter_type_list_opt RP {$$=setTypeElementType($1,setTypeExpr(makeType(T_FUNC),$3));}
+                           | direct_abstract_declarator LP parameter_type_list_opt RP {$$=setTypeElementType($1,setTypeField(makeType(T_FUNC),$3));}
                            ;
 
 initializer             :   constant_expression {$$=makeNode(N_INIT_LIST_ONE, 0, $1, 0);} 
@@ -315,7 +316,7 @@ cast_expression         : unary_expression {$$=$1;}
                         ;
 
 
-type_name               : declaration_specifiers {$$=$1;}
+type_name               : declaration_specifiers {$$=getTypeFromSpecifier($1);}
                         | declaration_specifiers abstract_declarator  {$$=setTypeNameSpecifier($2,$1);}
                         ;
 
@@ -508,180 +509,182 @@ A_ID *searchIdentifierAtCurrentLevel(char *s, A_ID *id) {
     return (id);
 }
             
-void checkForwardReference() {
-    A_ID *id;
-    A_TYPE *t;
-    id = current_id;
-    while(id) {
-        
-        if(id->level < current_level)
-            break;
-        // break if no problem in the current level.
+    void checkForwardReference() {
+        A_ID *id;
+        A_TYPE *t;
+        id = current_id;
+        while(id) {
+            
+            if(id->level < current_level)
+                break;
+            // break if no problem in the current level.
 
-        t = id->type;
+            t = id->type;
 
-        // check if there are any no-kind symbol records or
-        // prototype strucr_or_enum symbol records.
-        if(id->kind == ID_NULL)
-            syntax_error(31, id->name);
-        else if ((id->kind == ID_STRUCT || id->kind == ID_ENUM)
-                && t->field == NIL)
-            syntax_error(32, id->name);
-        id = id->prev;
-    }
-}
-
-// set specifier's NIL or NULL members to default value.
-void setDefaultSpecifier(A_SPECIFIER *p) {
-    if (p->type == NIL)
-        p->type = int_type;
-    if (p->stor == S_NULL)
-        p->stor = S_AUTO;
-}
-
-// call this function when reduce
-// declarator_specifiers: type_specifier declaration_specifiers
-// | storage_class_specifier declaration_specifiers
-A_SPECIFIER *updateSpecifier(A_SPECIFIER *p, A_TYPE *t, S_KIND s) {
-    if (t) {
-        if (p -> type) {
-            if (p->type == t)
-                ;
-            // prevent sequential different type specifiers.
-            else
-                syntax_error(24, NIL);
-        } else
-            p->type = t;
+            // check if there are any no-kind symbol records or
+            // prototype strucr_or_enum symbol records.
+            
+            if(id->kind == ID_NULL)
+                syntax_error(31, id->name);
+            else if ((id->kind == ID_STRUCT || id->kind == ID_ENUM)
+                    && t->field == NIL)
+                syntax_error(32, id->name);
+            id = id->prev;
+        }
     }
 
-    if (s) {
-        if (p->stor) {
-            if(s==p->stor)
-                ;
-            // prevent sequential differnt storage class specifiers.
-            else
-                syntax_error(24, NIL);
-        } else
-            p->stor=s;
-    }
-    return (p);
-}
-
-
-
-// id1's edge_node->link = id2
-A_ID *linkDeclaratorList(A_ID *id1, A_ID *id2) {
-    A_ID *m = id1;
-    if (id1==NIL)
-        return (id2);
-
-    while(m->link)
-        m=m->link;
-    m->link = id2;
-    /*
-    if (id1->kind == ID_STRUCT)
-        prt_A_ID(id1);
-    if (id2->kind == ID_STRUCT)
-        prt_A_ID(id2);
-        */
-    return (id1);
-}
-
-// call if use id in the expression.
-// e.g. "a = 10;"
-// when "a" (IDENTIFIER) is reduced to a(primary_expression),
-// we should check if there is a symbol 'a' in the previous symbol tables.
-// else, error.
-// TODO: what if "a" is a 'ID_FUNC'?
-A_ID *getIdentifierDeclared(char *s) {
-    A_ID *id;
-    id = searchIdentifier(s, current_id);
-    if(id == NIL)
-        syntax_error(13, s);
-    return (id);
-}
-
-
-// this is used
-// struct s;
-// ...
-// struct s a; << at this point.
-// so we do not have to check the completeness of the previous struct.
-A_TYPE *getTypeOfStructOrEnumRefIdentifier(T_KIND k, char *s, ID_KIND kk) {
-    A_TYPE *t;
-    A_ID *id;
-    id = searchIdentifier(s, current_id);
-
-    // if there is a prototype(same kind && same type-kind) with same name,
-    // return cp->type. (do not check either complete or not)
-    if (id) {
-        if (id -> kind == kk && id ->type->kind == k) {
-            return (id->type);
-        } else
-            syntax_error(11, s);
+    // set specifier's NIL or NULL members to default value.
+    void setDefaultSpecifier(A_SPECIFIER *p) {
+        if (p->type == NIL)
+            p->type = int_type;
+        if (p->stor == S_NULL)
+            p->stor = S_AUTO;
     }
 
-    t = makeType(k);
-    id = makeIdentifier(s);
-    id->kind = kk;
-    id->type = t;
-    return (t);
-}
+    // call this function when reduce
+    // declarator_specifiers: type_specifier declaration_specifiers
+    // | storage_class_specifier declaration_specifiers
+    A_SPECIFIER *updateSpecifier(A_SPECIFIER *p, A_TYPE *t, S_KIND s) {
+        if (t) {
+            if (p -> type) {
+                if (p->type == t)
+                    ;
+                // prevent sequential different type specifiers.
+                else
+                    syntax_error(24, NIL);
+            } else
+                p->type = t;
+        }
 
-// link n(syntax tree) to id(symbol record)
-// when reduce by the rule
-// declarator_initializer: declarator ASSIGN initializer
-// or
-// enumarator: IDENTIFIER ASSIGN expression
-A_ID *setDeclaratorInit(A_ID *id, A_NODE *n) {
-    id->init = n;
-    return (id);
-}
+        if (s) {
+            if (p->stor) {
+                if(s==p->stor)
+                    ;
+                // prevent sequential differnt storage class specifiers.
+                else
+                    syntax_error(24, NIL);
+            } else {
+                p->stor=s;
+            }
+        }
+        return (p);
+    }
 
-// set symbol record's kind.
-A_ID *setDeclaratorKind(A_ID *id, ID_KIND k) {
-    A_ID *a;
-    a = searchIdentifierAtCurrentLevel(id->name, id->prev);
-    if (a && a->kind == k) // typedef problem
-        syntax_error(12, id->name);
-    id->kind = k;
-    return (id);
-}
 
-A_ID *setDeclaratorType(A_ID *id, A_TYPE *t) {
-    id->type = t;
-    return (id);
-}
 
-// link t to the end of the id's type record.
-A_ID *setDeclaratorElementType(A_ID *id, A_TYPE *t) {
-    A_TYPE *tt;
-    if (id->type == NIL) {
+    // id1's edge_node->link = id2
+    A_ID *linkDeclaratorList(A_ID *id1, A_ID *id2) {
+        A_ID *m = id1;
+        if (id1==NIL)
+            return (id2);
+
+        while(m->link)
+            m=m->link;
+        m->link = id2;
+        /*
+        if (id1->kind == ID_STRUCT)
+            prt_A_ID(id1);
+        if (id2->kind == ID_STRUCT)
+            prt_A_ID(id2);
+            */
+        return (id1);
+    }
+
+    // call if use id in the expression.
+    // e.g. "a = 10;"
+    // when "a" (IDENTIFIER) is reduced to a(primary_expression),
+    // we should check if there is a symbol 'a' in the previous symbol tables.
+    // else, error.
+    // TODO: what if "a" is a 'ID_FUNC'?
+    A_ID *getIdentifierDeclared(char *s) {
+        A_ID *id;
+        id = searchIdentifier(s, current_id);
+        if(id == NIL)
+            syntax_error(13, s);
+        return (id);
+    }
+
+
+    // this is used
+    // struct s;
+    // ...
+    // struct s a; << at this point.
+    // so we do not have to check the completeness of the previous struct.
+    A_TYPE *getTypeOfStructOrEnumRefIdentifier(T_KIND k, char *s, ID_KIND kk) {
+        A_TYPE *t;
+        A_ID *id;
+        id = searchIdentifier(s, current_id);
+
+        // if there is a prototype(same kind && same type-kind) with same name,
+        // return cp->type. (do not check either complete or not)
+        if (id) {
+            if (id -> kind == kk && id ->type->kind == k) {
+                return (id->type);
+            } else
+                syntax_error(11, s);
+        }
+
+        t = makeType(k);
+        id = makeIdentifier(s);
+        id->kind = kk;
         id->type = t;
-    } else {
-        tt = id->type;
-        while (tt && tt->element_type)
-            tt=tt->element_type;
-        tt->element_type = t;
+        return (t);
     }
-    return (id);
-}
 
-A_ID *setDeclaratorTypeAndKind(A_ID *id, A_TYPE *t, ID_KIND k) {
-    id = setDeclaratorElementType(id, t);
-    id = setDeclaratorKind(id, k);
-    return (id);
+    // link n(syntax tree) to id(symbol record)
+    // when reduce by the rule
+    // declarator_initializer: declarator ASSIGN initializer
+    // or
+    // enumarator: IDENTIFIER ASSIGN expression
+    A_ID *setDeclaratorInit(A_ID *id, A_NODE *n) {
+        id->init = n;
+        return (id);
+    }
+
+    // set symbol record's kind.
+    A_ID *setDeclaratorKind(A_ID *id, ID_KIND k) {
+        A_ID *a;
+        a = searchIdentifierAtCurrentLevel(id->name, id->prev);
+        if (a && a->kind == k) // typedef problem
+            syntax_error(12, id->name);
+        id->kind = k;
+        return (id);
+    }
+
+    A_ID *setDeclaratorType(A_ID *id, A_TYPE *t) {
+        id->type = t;
+        return (id);
+    }
+
+    // link t to the end of the id's type record.
+    A_ID *setDeclaratorElementType(A_ID *id, A_TYPE *t) {
+        A_TYPE *tt;
+        if (id->type == NIL) {
+            id->type = t;
+        } else {
+            tt = id->type;
+            while (tt && tt->element_type)
+                tt=tt->element_type;
+            tt->element_type = t;
+        }
+        return (id);
+    }
+
+    A_ID *setDeclaratorTypeAndKind(A_ID *id, A_TYPE *t, ID_KIND k) {
+        id = setDeclaratorElementType(id, t);
+        id = setDeclaratorKind(id, k);
+        return (id);
 }
 
 A_ID *setFunctionDeclaratorSpecifier(A_ID *id, A_SPECIFIER *p) {
-    // function storage class should be S_AUTO(0).
+    // function storage class should be S_AUTO
     A_ID *a;
     if (p->stor)
         syntax_error(25, NIL);
     setDefaultSpecifier(p);
 
     // id->type should be T_FUNC
-    if(id->type->kind != T_FUNC) {
+    if(id->type == NIL || id->type->kind != T_FUNC) {
         syntax_error(21, NIL);
         return (id);
     } else {
@@ -703,7 +706,7 @@ A_ID *setFunctionDeclaratorSpecifier(A_ID *id, A_SPECIFIER *p) {
         }
     }
 
-    // and same parameter list.
+    // push the current_id to the end of the parameter list
     a = id->type->field;
     while (a) {
         if (strlen(a->name))
@@ -716,7 +719,10 @@ A_ID *setFunctionDeclaratorSpecifier(A_ID *id, A_SPECIFIER *p) {
 }
 
 A_ID *setFunctionDeclaratorBody(A_ID *id, A_NODE *n) {
-    id->type->expr = n;
+    if(id->type != NIL)
+        id->type->expr = n;
+    else
+        syntax_error(21, NIL);
     return (id);
 }
 
@@ -753,14 +759,13 @@ A_ID *setParameterDeclaratorSpecifier(A_ID *id, A_SPECIFIER *p) {
     if(searchIdentifierAtCurrentLevel(id->name, id->prev))
         syntax_error(12, id->name);
     
-    // TODO: consider either allow parameter like 'void* a' or not
     if(p->stor)
         syntax_error(14, NIL);
 
 
     // if parameter is void, param_field should be NIL.
-    // TODO: size == 0 if and only if type == void
-    if(p->type->size == 0) {
+    // TODO: size == 0 && check == TRUE if and only if type == void
+    if(p->type->size == 0 && p->type->check == TRUE) {
         return NIL;
     }
     setDefaultSpecifier(p);
@@ -785,13 +790,18 @@ A_ID *setStructDeclaratorListSpecifier(A_ID *id, A_TYPE *t) {
     return (id);
 }
 
-A_SPECIFIER *setTypeNameSpecifier(A_TYPE *t, A_SPECIFIER *p) {
+A_TYPE *getTypeFromSpecifier(A_SPECIFIER *p) {
+    if (p->stor)
+        syntax_error(20, NIL);
+    return p->type;
+}
+
+A_TYPE *setTypeNameSpecifier(A_TYPE *t, A_SPECIFIER *p) {
     if (p->stor)
         syntax_error(20, NIL);
     setDefaultSpecifier(p);
-    p->type = setTypeElementType(t, p->type);
-    
-    return (p);
+    t = setTypeElementType(t, p->type);
+    return (t);
 }
 
 
@@ -861,12 +871,21 @@ A_TYPE *setTypeAndKindOfDeclarator(A_TYPE *t, ID_KIND k, A_ID *id) {
 }
 
 // Initially, parameter a, b is pointing the first ID_PARM symbol record of each T_FUNC type table.
-// this function is called to check if there is a same-named prototype.
 BOOLEAN isNotSameFormalParameters(A_ID *a, A_ID *b) {
-    if (a == NIL)
-        return (FALSE);
+    // return FALSE when parameters matched.
+    // return TRUE  when parameters mismatched.
+    if ((a == NIL && b != NIL) || 
+            (a != NIL && b == NIL)) 
+        return (TRUE);
     
     while(a) {
+        if ( b != NIL) {
+           if ( isVaArgs(a) && isVaArgs(b) )
+               return (FALSE);
+           else if (isVaArgs(a) != isVaArgs(b) )
+               return (TRUE);
+        }
+
         if (b == NIL || isNotSameType(a->type, b->type))
             return (TRUE);
         a = a->link;
@@ -878,13 +897,24 @@ BOOLEAN isNotSameFormalParameters(A_ID *a, A_ID *b) {
         return (FALSE);
 }
 
+BOOLEAN isVaArgs(A_ID* a) {
+    return strcmp(a->name, "") == 0 && a->type == NIL && a->kind == ID_PARM;
+}
 
 // check if the two types are same by recursive calling..
 // until else statement is returned..
 BOOLEAN isNotSameType(A_TYPE *t1, A_TYPE *t2) {
-    if (isPointerOrArrayType(t1) || isPointerOrArrayType(t2))
-        return (isNotSameType(t1->element_type, t2->element_type));
-    else
+    if (isPointerOrArrayType(t1)) {
+        return (isNotSameType(t1->element_type, t2));
+    } else if (isPointerOrArrayType(t2)) {
+        return (isNotSameType(t1, t2->element_type));
+    } else if (t1->kind == T_FUNC && t2->kind == T_FUNC) {
+        if (isNotSameFormalParameters(t1->field, t2->field))
+            return TRUE;
+        if (isNotSameType(t1->element_type, t2->element_type))
+            return TRUE;
+        return FALSE;
+    } else
         return (t1!=t2);
 }
 
@@ -992,7 +1022,7 @@ void syntax_error(int i, char *s) {
         case 12: printf("redeclaration of identifier %s", s); break;
         case 13: printf("undefined identifier %s", s); break;
         case 14: printf("illegal type specifier in formal parameter"); break;
-        case 20: printf("illegal storage class in type speifiers"); break;
+        case 20: printf("illegal storage class in type specifiers"); break;
         case 21: printf("illegal function declarator"); break;
         case 22: printf("conflicting parm type in prototype function %s", s); break;
         case 23: printf("empty parameter name"); break;
@@ -1001,7 +1031,7 @@ void syntax_error(int i, char *s) {
         case 26: printf("illegal or conflicting return type in function %s", s); break;
         case 31: printf("undefined type for identifier %s", s); break;
         case 32: printf("incomplete forward reference for identifier %s", s); break;
-        default: printf("unkown"); break;
+        default: printf("unknown"); break;
    }
 
     if (strlen(yytext) == 0)

@@ -2,6 +2,7 @@
 
 int main()
 {
-    int b[32], c[];
+    int a = a << 10;
     return 0;
+
 }

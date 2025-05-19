@@ -1,10 +1,6 @@
-int _Node;
-struct _Node;
-struct _Node yes;
-int main()
-{
+struct Node {int value, time; };
+enum Node n;
+int main() {
     return 0;
 }
-struct _Node {
-    int a, b, c;
-};
+enum Node {A, B};

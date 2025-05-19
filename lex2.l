@@ -99,12 +99,10 @@ int checkIdentifier(char *s) {
     A_ID *a;
     A_ID *b = current_id;
     a = searchIdentifier(s, b);
-    
     if(a == NIL)
         return IDENTIFIER;
     else if(a->kind == ID_TYPE) {
         yylval = a->type;
-        printf("type identifier: %s\n", a->name);
         return TYPE_IDENTIFIER;
     } else
         return IDENTIFIER;

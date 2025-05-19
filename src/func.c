@@ -1,13 +1,11 @@
-int fib(int);
 
+typedef int DATA;
+typedef struct s_node S_NODE;
+struct s_node {
+    DATA data;
+    S_NODE* next;
+};
 
-int main()
-{
-    fib(10);
-    return 0;
-}
-
-
-int fib(int a) {
-    return 100 + a;
+int func(S_NODE* s) {
+    return 1;
 }

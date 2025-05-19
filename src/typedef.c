@@ -7,7 +7,9 @@ typedef struct _Node {
 
 
 
-int main()
+
+
+int main(Node n)
 {
     Node node;
 }

@@ -38,9 +38,8 @@ typedef enum e_node_name {
 	N_EXP_AND,
 	N_EXP_OR,
 	N_EXP_ASSIGN,
-
-    N_ARG_LIST,
-    N_ARG_LIST_NIL,
+        N_ARG_LIST,
+        N_ARG_LIST_NIL,
 	N_STMT_LABEL_CASE,
 	N_STMT_LABEL_DEFAULT,
 	N_STMT_COMPOUND,
@@ -61,13 +60,12 @@ typedef enum e_node_name {
 	N_INIT_LIST,
 	N_INIT_LIST_ONE,
 	N_INIT_LIST_NIL,
-
     //add some expr
+        N_EXP_QST,
 	N_EXP_LSHIFT,
-    N_EXP_RSHIFT,
-    N_EXP_BXOR,
-    N_EXP_BAR,
-    N_EXP_QST
+        N_EXP_RSHIFT,
+        N_EXP_BXOR,
+        N_EXP_BAR,
 } NODE_NAME;
 typedef enum {T_NULL,T_ENUM,T_ARRAY,T_STRUCT,T_UNION,T_FUNC,T_POINTER,
 	T_VOID} T_KIND;

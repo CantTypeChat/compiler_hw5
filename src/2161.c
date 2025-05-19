@@ -1,9 +1,9 @@
-typedef struct Node{
+typedef struct _Node {
     int data;
-    struct Node* next;
+    struct _Node* next;
 } Node;
 
-typedef struct Queue {
+typedef struct _Queue {
     Node *front, *back;
     int size;
 } Queue;
@@ -11,9 +11,9 @@ typedef struct Queue {
 void init(Queue* q);
 void push(Queue* q, int data);
 int  pop(Queue* q);
-bool is_empty(Queue* q);
+int is_empty(Queue* q);
 int size(Queue* q);
-
+void free(void* );
 int main()
 {
     int n, i;
@@ -33,7 +33,7 @@ int main()
 
 void init(Queue* q)
 {
-    q->front = q->back = NULL;
+    q->front = q->back = 0;
     q->size = 0;
 }
 
@@ -41,7 +41,7 @@ void push(Queue* q, int data)
 {
     Node* new_node = (Node*) malloc(sizeof(Node));
     new_node->data = data;
-    new_node->next = NULL;
+    new_node->next = 0;
     if(is_empty(q)) {
         q->front = q->back = new_node;
     } else {
@@ -59,13 +59,13 @@ int pop(Queue* q)
     rm_node = q->front;
     rm_data = rm_node->data;
     q->front = q->front->next;
-    if(q->front == NULL)
-        q->back = NULL;
+    if(q->front == 0)
+        q->back = 0;
     free(rm_node);
     q->size--;
     return rm_data;
 }
-bool is_empty(Queue* q)
+int is_empty(Queue* q)
 {
     return size(q) == 0;
 }
