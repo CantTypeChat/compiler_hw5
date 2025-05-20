@@ -10,56 +10,62 @@ char * node_name[] = {
 	"N_EXP_STRING_LITERAL",
 	"N_EXP_ARRAY",
 	"N_EXP_FUNCTION_CALL",
-	"N_EXP_STRUCT",
-	"N_EXP_ARROW",
-	"N_EXP_POST_INC",
-	"N_EXP_POST_DEC",
-	"N_EXP_PRE_INC",
-	"N_EXP_PRE_DEC",
-	"N_EXP_AMP",
-	"N_EXP_STAR",
-	"N_EXP_NOT",
-	"N_EXP_PLUS",
-	"N_EXP_MINUS",
-	"N_EXP_SIZE_EXP",
-	"N_EXP_SIZE_TYPE",
-	"N_EXP_CAST",
-	"N_EXP_MUL",
-	"N_EXP_DIV",
-	"N_EXP_MOD",
-	"N_EXP_ADD",
-	"N_EXP_SUB",
-	"N_EXP_LSS",
-	"N_EXP_GTR",
-	"N_EXP_LEQ",
-	"N_EXP_GEQ",
-	"N_EXP_NEQ",
-	"N_EXP_EQL",
-	"N_EXP_AND",
-	"N_EXP_OR",
-	"N_EXP_ASSIGN",
-	"N_ARG_LIST",
-	"N_ARG_LIST_NIL",
-	"N_STMT_LABEL_CASE",
-	"N_STMT_LABEL_DEFAULT",
-	"N_STMT_COMPOUND",
-	"N_STMT_EMPTY",
-	"N_STMT_EXPRESSION",
-	"N_STMT_IF",
-	"N_STMT_IF_ELSE",
-	"N_STMT_SWITCH",
-	"N_STMT_WHILE",
-	"N_STMT_DO",
-	"N_STMT_FOR",
-	"N_STMT_RETURN",
-	"N_STMT_CONTINUE",
-	"N_STMT_BREAK",
-	"N_FOR_EXP",
-	"N_STMT_LIST",
-	"N_STMT_LIST_NIL",
-	"N_INIT_LIST",
-	"N_INIT_LIST_ONE",
-	"N_INIT_LIST_NIL"};
+        "N_EXP_STRUCT",
+        "N_EXP_ARROW",
+        "N_EXP_POST_INC",
+        "N_EXP_POST_DEC",
+        "N_EXP_PRE_INC",
+        "N_EXP_PRE_DEC",
+        "N_EXP_AMP",
+        "N_EXP_STAR",
+        "N_EXP_NOT",
+        "N_EXP_PLUS",
+        "N_EXP_MINUS",
+        "N_EXP_SIZE_EXP",
+        "N_EXP_SIZE_TYPE",
+        "N_EXP_CAST",
+        "N_EXP_MUL",
+        "N_EXP_DIV",
+        "N_EXP_MOD",
+        "N_EXP_ADD",
+        "N_EXP_SUB",
+        "N_EXP_LSS",
+        "N_EXP_GTR",
+        "N_EXP_LEQ",
+        "N_EXP_GEQ",
+        "N_EXP_NEQ",
+        "N_EXP_EQL",
+        "N_EXP_AND",
+        "N_EXP_OR",
+        "N_EXP_ASSIGN",
+        "N_ARG_LIST",
+        "N_ARG_LIST_NIL",
+        "N_STMT_LABEL_CASE",
+        "N_STMT_LABEL_DEFAULT",
+        "N_STMT_COMPOUND",
+        "N_STMT_EMPTY",
+        "N_STMT_EXPRESSION",
+        "N_STMT_IF",
+        "N_STMT_IF_ELSE",
+        "N_STMT_SWITCH",
+        "N_STMT_WHILE",
+        "N_STMT_DO",
+        "N_STMT_FOR",
+        "N_STMT_RETURN",
+        "N_STMT_CONTINUE",
+        "N_STMT_BREAK",
+        "N_FOR_EXP",
+        "N_STMT_LIST",
+        "N_STMT_LIST_NIL",
+        "N_INIT_LIST",
+        "N_INIT_LIST_ONE",
+        "N_INIT_LIST_NIL",
+        "N_EXP_QST",
+        "N_EXP_LSHIFT",
+        "N_EXP_RSHIFT",
+        "N_EXP_BXOR",
+        "N_EXP_BAR",
+};
 void print_ast(A_NODE *);
 void prt_program(A_NODE *, int);
 void prt_initializer(A_NODE *, int);
@@ -184,11 +190,20 @@ void prt_expression(A_NODE *node, int s)
 	   case N_EXP_EQL :
 	   case N_EXP_AND :
 	   case N_EXP_OR :
+           case N_EXP_LSHIFT :
+           case N_EXP_RSHIFT :
+           case N_EXP_BXOR :
+           case N_EXP_BAR :
 	   case N_EXP_ASSIGN :
 		prt_expression(node->llink, s+1);
 		prt_expression(node->rlink, s+1);
    		break;
-	   default : 
+           case N_EXP_QST :
+		prt_expression(node->llink, s+1);
+		prt_expression(node->clink, s+1);
+		prt_expression(node->rlink, s+1);
+                break;
+           default : 
 		printf("****syntax tree error******");
 	}
 }
@@ -316,9 +331,9 @@ void prt_A_TYPE(A_TYPE *t, int s)
 	else if (t==char_type) 
 		printf("(char %d)\n",t->size);
 	else if (t==void_type)
-		printf("(void)");
+		printf("(void)\n");
 	else if (t->kind==T_NULL)
-		printf("(null)");
+		printf("(null)\n");
 	else if (t->prt)
 		printf("(DONE:%x)\n",t);
 	else 
@@ -342,13 +357,13 @@ void prt_A_TYPE(A_TYPE *t, int s)
 			if (t->expr)
 				prt_expression(t->expr,s+2);
 			else 
-				print_space(s+2); printf("(none)\n");
+                                {print_space(s+2); printf("(none)\n");}
 			print_space(s); printf("|  ELEMENT_TYPE\n");
 			prt_A_TYPE(t->element_type,s+2);
 			break;
 		case T_STRUCT:
 			t->prt=TRUE;
-			printf("STRUCT\n");
+			printf("STRUCT (TYPE: %x)\n", t);
 			print_space(s); printf("|  FIELD\n");
 			prt_A_ID_LIST(t->field,s+2);
 			break;
@@ -377,21 +392,22 @@ void prt_A_ID_LIST(A_ID *id, int s)
 		id=id->link;
 	}
 }
+
+
 char *id_kind_name[]={"NULL","VAR","FUNC","PARM","FIELD","TYPE","ENUM", 
 			"STRUCT","ENUM_LITERAL"};
 char *spec_name[]={"NULL","AUTO","STATIC","TYPEDEF"};
 void prt_A_ID_NAME(A_ID *id, int s)
 {
 	print_space(s);
-	printf("(ID=\"%s\") TYPE:%x KIND:%s SPEC=%s LEV=%d VAL=%d 
-		ADDR=%d \n", id->name, id->type,id_kind_name[id->kind],
+        if(id == NIL) {printf("(ID=(NIL)\n"); return;}
+	printf("(ID=\"%s\") TYPE:%x KIND:%s SPEC=%s LEV=%d VAL=%d ADDR=%d \n", id->name, id->type,id_kind_name[id->kind],
 		spec_name[id->specifier],id->level, id->value, id->address);
 }
 void prt_A_ID(A_ID *id, int s)
 {
 	print_space(s);
-	printf("(ID=\"%s\") TYPE:%x KIND:%s SPEC=%s LEV=%d VAL=%d
-		ADDR=%d \n", id->name, id->type,id_kind_name[id->kind], 
+	printf("(ID=\"%s\") TYPE:%x KIND:%s SPEC=%s LEV=%d VAL=%d ADDR=%d \n", id->name, id->type,id_kind_name[id->kind], 
 		spec_name[id->specifier],id->level, id->value, id->address);
 	if (id->type) {
 		print_space(s);
