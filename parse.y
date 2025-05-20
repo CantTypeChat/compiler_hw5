@@ -904,10 +904,8 @@ BOOLEAN isVaArgs(A_ID* a) {
 // check if the two types are same by recursive calling..
 // until else statement is returned..
 BOOLEAN isNotSameType(A_TYPE *t1, A_TYPE *t2) {
-    if (isPointerOrArrayType(t1)) {
-        return (isNotSameType(t1->element_type, t2));
-    } else if (isPointerOrArrayType(t2)) {
-        return (isNotSameType(t1, t2->element_type));
+    if ( isPointerOrArrayType(t1) || isPointerOrArrayType(t2)) {
+        return (isNotSameType(t1->element_type, t2->element_type));
     } else if (t1->kind == T_FUNC && t2->kind == T_FUNC) {
         if (isNotSameFormalParameters(t1->field, t2->field))
             return TRUE;
