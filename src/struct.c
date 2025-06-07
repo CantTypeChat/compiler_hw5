@@ -8,14 +8,14 @@ int main() {
 int func() {
     struct mys mys2;
     char* p = "heool";
-    mys.a;
+    mys.a = 1;
     mys.itsstruct.itsunion.i;
     return 0;
 
 }
 
 struct mys {
-    int a : 4;
+    int a;
     int b;
     int c;
     float f1, f2, f3;

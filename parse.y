@@ -332,8 +332,6 @@ additive_expression         : multiplicative_expression {$$=$1;}
                             ;
 
 shift_expression            : additive_expression {$$=$1;}
-                            | shift_expression LSSLSS additive_expression {$$=makeNode(N_EXP_LSHIFT,$1,0,$3);}
-                            | shift_expression GTRGTR additive_expression {$$=makeNode(N_EXP_RSHIFT,$1,0,$3);}
                             ;
 relational_expression   : shift_expression {$$=$1;}
                         | relational_expression LSS shift_expression {$$=makeNode(N_EXP_LSS,$1,0,$3);}
@@ -348,15 +346,12 @@ equality_expression  : relational_expression {$$=$1;}
                      ;
 
 AND_expression              : equality_expression {$$=$1;}
-                            | AND_expression AMP equality_expression {$$=makeNode(N_EXP_AMP,$1,0,$3);}
                             ;
 
 exclusive_OR_expression     : AND_expression {$$=$1;}
-                            | exclusive_OR_expression BXOR AND_expression {$$=makeNode(N_EXP_BXOR,$1,0,$3);}
                             ;
 
 inclusive_OR_expression     : exclusive_OR_expression {$$=$1;}
-                            | inclusive_OR_expression BAR exclusive_OR_expression {$$=makeNode(N_EXP_BAR,$1,0,$3);}
                             ;
 logical_AND_expression  : inclusive_OR_expression {$$=$1;}
                         | logical_AND_expression AMPAMP inclusive_OR_expression {$$=makeNode(N_EXP_AND,$1,0,$3);}
@@ -367,7 +362,6 @@ logical_OR_expression       : logical_AND_expression {$$=$1;}
                             ;
 
 conditional_expression      : logical_OR_expression {$$=$1;}
-                            | logical_OR_expression QUESTION expression COLON conditional_expression {$$=makeNode(N_EXP_QST, $1, $3, $5);}
                             ;
 
 assignment_expression       : conditional_expression {$$=$1;}
