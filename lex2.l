@@ -91,8 +91,37 @@ extern A_ID *searchIdentifier(char *, A_ID*);
 {integer_literal}                   { yylval = atoi(yytext); return(INTEGER_CONSTANT); }
 {float}                    { yylval = (char*) strdup(yytext); return(FLOAT_CONSTANT); }
 {identifier}               { yylval = (char*) strdup(yytext); return(checkIdentifier(yytext));}
-\"([^\"\n]|\\[\"\n])*\"               { return(STRING_LITERAL);}
-\'([^'\n]|\\[\\\'nt])\'       { return(CHARACTER_CONSTANT);}
+
+\"([^\"\n]|\\[\"\n])*\"               {
+        yylval = (char*) strdup(yytext);
+        return(STRING_LITERAL);}
+
+\'([^'\n]|\\[\\\'nt])\'       { 
+    char c;
+    if(yytext[1] == '\\') {
+        switch(yytext[2]) {
+            case 'n':
+               c = '\n';
+               break;
+            case 't':
+               c = '\t';
+               break; 
+            case '\\':
+               c = '\\';
+               break;
+            case '\'':
+               c = '\'';
+               break;
+            default:
+               printf("unknown const char detected.\n");
+        }
+    } else {
+        c = yytext[1];
+    }
+    yylval = (char) c;
+    return(CHARACTER_CONSTANT);
+}
+
 %%
 
 int checkIdentifier(char *s) {
