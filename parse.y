@@ -6,7 +6,7 @@
 #include"y.tab.h"
 #define YYSTYPE long long
 #define YYSTYPE_IS_DECLARED 1
-
+extern int semantic_err;
 extern void print_ast(A_NODE *node);    
 extern char *yytext;
 A_TYPE *int_type, *char_type, *void_type, *float_type, *string_type;
@@ -1046,15 +1046,14 @@ int yyerror(char* s)
 
 
 extern void print_sem_ast(A_NODE *);
+extern void semantic_analysis(A_NODE *);
 
-int main(void)
-{
+int main() {
     initialize();
-    yyparse();
-    printf("success!\n");
-    //print_ast(root);
+    yyparse(); 
+    if (syntax_err) exit(1);
+    print_ast(root);
+    semantic_analysis(root);
+    if (semantic_err) exit(1);
     print_sem_ast(root);
-    return 0;
-}
-
-
+   }
