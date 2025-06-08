@@ -911,7 +911,10 @@ BOOLEAN isNotSameType(A_TYPE *t1, A_TYPE *t2) {
 }
 
 BOOLEAN isPointerOrArrayType(A_TYPE *t1) {
-    return t1->kind == T_POINTER || t1->kind == T_ARRAY;
+    if( t1 && (t1 -> kind == T_POINTER || t1->kind == T_ARRAY))
+        return TRUE;
+    else
+        return FALSE;
 }
 
 void initialize() {
@@ -1042,13 +1045,15 @@ int yyerror(char* s)
 }
 
 
+extern void print_sem_ast(A_NODE *);
 
 int main(void)
 {
     initialize();
     yyparse();
     printf("success!\n");
-    print_ast(root);
+    //print_ast(root);
+    print_sem_ast(root);
     return 0;
 }
 

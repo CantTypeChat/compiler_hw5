@@ -1,7 +1,6 @@
-char * a = "hello, world!";
+char* string = "hello, world!";
 
 int main()
 {
-    printf("%s", a);
     return 0;
 }
