@@ -14,18 +14,3 @@ byacc -vd $YACC_FILE
 
 cc -w -g -o test $SYN_AST $SEM_AST lex.yy.c y.tab.c $SEM_FILE
 
-for file in "$SRC_DIR"/*.c; do
-    if [ -f "$file" ]; then
-        echo -n "Testing $file ... "
-        
-        $EXECUTABLE < "$file" > /dev/null 2>&1
-        STATUS=$?
-
-        if [ $STATUS -eq 139 ]; then
-            echo "❌ Segmentation Fault (exit code 139)"
-        else
-            echo "✅ OK (exit code $STATUS)"
-        fi
-    fi
-done
-

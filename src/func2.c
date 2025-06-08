@@ -11,3 +11,8 @@ int do_the_job() {
     return 1;
 }
 
+
+int main() {
+    func();
+    return 0;
+}

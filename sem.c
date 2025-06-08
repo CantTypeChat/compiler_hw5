@@ -111,6 +111,7 @@ A_TYPE *sem_expression(A_NODE *node)
             break;
         case N_EXP_CHAR_CONST:
             result=char_type;
+            break;
         case N_EXP_STRING_LITERAL:
             lit.type=string_type;
             lit.value.s=node->clink;
@@ -880,6 +881,8 @@ A_NODE *convertCastingConversion(A_NODE *node, A_TYPE* t1)
 
 BOOLEAN isAllowableAssignmentConversion(A_TYPE *t1, A_TYPE *t2, A_NODE* node)
 {
+    // if (isFunctionType(t1) && isFunctionType(t2)) {
+
     if (isArithmeticType(t1) && isArithmeticType(t2))
         return TRUE;
     else if (isStructOrUnionType(t1) && isCompatibleType(t1, t2))
@@ -1213,7 +1216,7 @@ void semantic_error(int i, int ll, char *s)
                  break;
         case 37: printf("illegal struct field identifier in struct reference expr\n");
                  break;
-        case 38: printf("illegal kind of identifier %s in expression\n");
+        case 38: printf("illegal kind of identifier %s in expression\n", s);
                  break;
         case 39: printf("illegal type size in sizeof operation\n");
                  break;
@@ -1231,7 +1234,7 @@ void semantic_error(int i, int ll, char *s)
                 break;
         case 58:printf("not permitted type casting in expression\n");
                 break;
-        case 59:printf("not permitted type conversion in argument)n");
+        case 59:printf("not permitted type conversion in argument\n");
                 break;
         case 60:printf("expression is not an Ivalue \n");
                 break;

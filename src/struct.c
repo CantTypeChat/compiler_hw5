@@ -1,19 +1,5 @@
 struct mys;
 
-int main() {
-    struct mys mystruct;
-    return 0;
-}
-
-int func() {
-    struct mys mys2;
-    char* p = "heool";
-    mys.a = 1;
-    mys.itsstruct.itsunion.i;
-    return 0;
-
-}
-
 struct mys {
     int a;
     int b;
@@ -29,4 +15,18 @@ struct mys {
 
     int adsa[612];
 };
+int main() {
+    struct mys mystruct;
+    return 0;
+}
+
+
+int func() {
+    struct mys mys2;
+    char* p;
+    p = "heool";
+    mys2.a = 1;
+    mys2.itsstruct.itsunion.i;
+    return 0;
+}
 
