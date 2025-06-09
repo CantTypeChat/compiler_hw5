@@ -1,7 +1,7 @@
 
 struct _Node {
     int value;
-    struct _Node* next;
+    struct _Node next;
 };
 
 typedef struct _Node Node;

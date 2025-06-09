@@ -1,9 +1,13 @@
 #include "type.h"
 #include "sem.h"
-float atof0;
+
+#include <stdlib.h>
+
 extern A_TYPE *int_type, *float_type, *char_type, *string_type, *void_type; int global_address= 12; 
 int semantic_err=0;
-
+float my_atof(const char* str) {
+    return (float) atof(str);
+}
 #define LIT_MAX 100
 
 A_LITERAL literal_table[LIT_MAX];
@@ -105,7 +109,7 @@ A_TYPE *sem_expression(A_NODE *node)
             break;
         case N_EXP_FLOAT_CONST:
             lit.type = float_type;
-            lit.value.f = atof(node->clink);
+            lit.value.f = my_atof(node->clink);
             node->clink = put_literal(lit, node->line);
             result = float_type;
             break;
@@ -121,7 +125,6 @@ A_TYPE *sem_expression(A_NODE *node)
         case N_EXP_ARRAY:
             t1=sem_expression(node->llink);
             t2=sem_expression(node->rlink);
-
             t = convertUsualBinaryConversion(node);
             t1=node->llink->type;
             t2=node->rlink->type;
@@ -494,6 +497,8 @@ int sem_statement(
                     node->clink = convertCastingConversion(node->clink, ret);
                 else
                     semantic_error(57, node->line);
+            } else if (ret != void_type) {
+                semantic_warning(12, node->line);
             }
             break;
         default:
@@ -677,6 +682,7 @@ int sem_declaration(A_ID *id, int addr)
             break;
         case ID_FIELD:
             i = sem_A_TYPE(id->type);
+            if (i == 0) {semantic_error(84, id->line);}
             if (isFunctionType(id->type) || isVoidType(id->type))
                 semantic_error(84, id->line);
             if (i % 4)
@@ -881,9 +887,13 @@ A_NODE *convertCastingConversion(A_NODE *node, A_TYPE* t1)
 
 BOOLEAN isAllowableAssignmentConversion(A_TYPE *t1, A_TYPE *t2, A_NODE* node)
 {
-    // if (isFunctionType(t1) && isFunctionType(t2)) {
-
-    if (isArithmeticType(t1) && isArithmeticType(t2))
+    if (isFunctionType(t1) && isFunctionType(t2)) {
+        if (! isSameParameterType(t1->field, t2->field))
+            return FALSE;
+        if (isNotSameType(t1->element_type, t2->element_type))
+            return FALSE;
+        return TRUE; 
+    } else if (isArithmeticType(t1) && isArithmeticType(t2))
         return TRUE;
     else if (isStructOrUnionType(t1) && isCompatibleType(t1, t2))
         return TRUE;
@@ -1036,6 +1046,7 @@ A_LITERAL getTypeAndValueOfExpression(A_NODE* node)
             else {
                 result.type=int_type;
                 result.value.i = id->init;
+
             }
             break;
         case N_EXP_INT_CONST:
@@ -1048,7 +1059,7 @@ A_LITERAL getTypeAndValueOfExpression(A_NODE* node)
             break;
         case N_EXP_FLOAT_CONST:
             result.type = float_type;
-            result.value.f = atof(node->clink);
+            result.value.f = my_atof(node->clink);
             break;
         case N_EXP_STRING_LITERAL:
         case N_EXP_ARRAY:
@@ -1236,7 +1247,7 @@ void semantic_error(int i, int ll, char *s)
                 break;
         case 59:printf("not permitted type conversion in argument\n");
                 break;
-        case 60:printf("expression is not an Ivalue \n");
+        case 60:printf("expression is not an lvalue \n");
                 break;
         case 71:printf("case label not within a switch statement \n");
                 break;

@@ -1056,4 +1056,4 @@ int main() {
     semantic_analysis(root);
     if (semantic_err) exit(1);
     print_sem_ast(root);
-   }
+}
