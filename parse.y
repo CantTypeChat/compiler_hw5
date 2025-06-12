@@ -1043,17 +1043,3 @@ int yyerror(char* s)
     fprintf(stderr, "error: %s \n", s);
     exit(EXIT_FAILURE);
 }
-
-
-extern void print_sem_ast(A_NODE *);
-extern void semantic_analysis(A_NODE *);
-
-int main() {
-    initialize();
-    yyparse(); 
-    if (syntax_err) exit(1);
-    print_ast(root);
-    semantic_analysis(root);
-    if (semantic_err) exit(1);
-    print_sem_ast(root);
-}

@@ -4,12 +4,12 @@ typedef long YYSTYPE;
 #include<stdio.h>
 #include<string.h>
 #include"type.h"
-float atof();
+float my_atof(const char*);
 extern FILE* yyin;
 extern char* yytext;
 extern int line_no;
-intpc = 0;
-struct{char*name;intaddr;}symbol[SYMBOL_MAX];
+int pc = 0;
+struct{char*name;int addr;}symbol[SYMBOL_MAX];
 int dx=0;
 int stack[STACK_MAX];
 INSTRUCTION code[CODE_MAX];
@@ -117,7 +117,7 @@ void put_data(int i,int k,char *s)
 	if (k==1)
 	*(stack_i+i/4)= (int)s;
 	else if (k==2)
-	*(stack_f+i/4)=atof(s);
+	*(stack_f+i/4)=my_atof(s);
 	else if (k==3){ 
 	*(s+strlen(s)-1)=0;
 	strcpy(stack_c+i,s+1);}
@@ -158,7 +158,7 @@ void assem2()
 	code[i].a=symbol[j].addr; }
 }
 
-void gen_code(OPCODEop,intl,longa)
+void gen_code(OPCODE op,int l,long a)
 {
 	if (pc>=CODE_MAX) 
 	assemble_error(10);

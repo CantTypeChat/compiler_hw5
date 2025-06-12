@@ -9,11 +9,12 @@ ws	{delim}+
 typedef long YYSTYPE;
 #include"y.tab.h"
 
-intline_no=1;
+extern char* yytext;
 
-intsearch_opcode();
-intis_inst2();
-char*makeString();
+int line_no=1;
+int search_opcode();
+int is_inst2();
+char* makeString();
 %}
 
 %%
