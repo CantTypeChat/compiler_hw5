@@ -3,11 +3,15 @@
 typedef long YYSTYPE;
 #include<stdio.h>
 #include<string.h>
+#include<stdlib.h>
 #include"type.h"
-float my_atof(const char*);
+float my_atof(const char* string) {
+    return (float) atof(string);
+}
 extern FILE* yyin;
 extern char* yytext;
 extern int line_no;
+extern YYSTYPE yylval;
 int pc = 0;
 struct{char*name;int addr;}symbol[SYMBOL_MAX];
 int dx=0;

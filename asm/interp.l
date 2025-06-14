@@ -10,7 +10,7 @@ typedef long YYSTYPE;
 #include"y.tab.h"
 
 extern char* yytext;
-
+extern YYSTYPE yylval;
 int line_no=1;
 int search_opcode();
 int is_inst2();
