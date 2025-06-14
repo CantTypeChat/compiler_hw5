@@ -68,7 +68,7 @@ void gen_literal_table()
 {
     int i;
     for (i = 1; i <= literal_no; i++) {
-        fprintf(fout, "literal %5d  ", literal_table[i].addr);
+        fprintf(fout, ".literal %5d  ", literal_table[i].addr);
         if (literal_table[i].type == int_type)
             fprintf(fout, "%d\n", literal_table[i].value.i);
         else if (literal_table[i].type == float_type)
