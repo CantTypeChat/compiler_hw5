@@ -91,7 +91,7 @@ void interp()
 			*(stack_c+stack[t])=stack[t+1];
 			stack[t]=stack[t+1];
 			break;
-                case OFFSET: if((stack[t]+stack[t-1]) / 4 >= STACK_MAX) runtime_error(5, p);
+                case OFFSET:
                                  t--; stack[t]=stack[t]+stack[t+1];break;
 		case MOD: if (stack[t]==0) 
 				runtime_error(1,p); 
@@ -174,6 +174,8 @@ void interp()
 			break;
                 case CHK:
                         if(stack[t] < 0 || stack[t] >= i.a) runtime_error(2, p); break;
+                case OOME:
+                        if((stack[t-1] + stack[t]) / 4 >= STACK_MAX) runtime_error(5, p); break;
 		default: runtime_error(100,p);
 			break;
  	    	}

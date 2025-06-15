@@ -13,7 +13,7 @@ typedef enum OP { OP_NULL, LOD, LDX, LDXB, LDA, LITI,
                   SUP, CAL, ADDR, RET,
                   MINUSI, MINUSF, CHK,
                   LDI, LDIB, SWITCH, SWVALUE, SWDEFAULT, SWLABEL, SWEND,
-                  POP, POPB } OPCODE;
+                  POP, POPB, OOME } OPCODE;
 
 char *opcode_name[] = {
   "OP_NULL","LOD","LDX","LDXB","LDA","LITI",
@@ -25,7 +25,7 @@ char *opcode_name[] = {
   "INT","INCI","INCF","DECI","DECF",
   "SUP","CAL","ADDR","RET",
   "MINUSI","MINUSF","CHK","LDI","LDIB",
-  "SWITCH","SWVALUE","SWDEFAULT","SWLABEL","SWEND","POP","POPB"
+  "SWITCH","SWVALUE","SWDEFAULT","SWLABEL","SWEND","POP","POPB", "OOME"
 };
 
 typedef enum { SW_VALUE, SW_DEFAULT } SW_KIND;
@@ -158,11 +158,16 @@ void gen_expression(A_NODE *node)
         case N_EXP_ARRAY:
             gen_expression(node->llink);
             gen_expression(node->rlink);
-            gen_code_i(CHK,0,node->llink->type->expr);
+            if(node->llink->type->expr > 0)
+                gen_code_i(CHK,0,node->llink->type->expr);
             if (node->type->size > 1) {
                 gen_code_i(LITI, 0, node->type->size);
                 gen_code_i(MULI, 0, 0);
             }
+
+            if(node->llink->type->expr == 0)
+                gen_code_i(OOME, 0, 0);
+
             gen_code_i(OFFSET, 0, 0);
             if (!isArrayType(node->type)) {
                 i = node->type->size;
@@ -385,6 +390,11 @@ void gen_expression(A_NODE *node)
                 gen_code_i(LITI, 0, node->llink->type->element_type->size);
                 gen_code_i(MULI, 0, 0);
             }
+            if (isPointerOrArrayType(node->llink->type) ^
+                        isPointerOrArrayType(node->rlink->type))
+                    gen_code_i(OOME, 0, 0); // check OUT OF MEMORY ERROR
+
+
             if (isFloatType(node->type))
                 gen_code_i(ADDF, 0, 0);
             else
@@ -532,11 +542,16 @@ void gen_expression_left(A_NODE *node)
         case N_EXP_ARRAY:
             gen_expression(node->llink);
             gen_expression(node->rlink);
-            gen_code_i(CHK, 0, node->llink->type->expr);
+            if(node->llink->type->expr > 0)
+                gen_code_i(CHK, 0, node->llink->type->expr);
             if (node->type->size > 1) {
                 gen_code_i(LITI, 0, node->type->size);
                 gen_code_i(MULI, 0, 0);
             }
+
+            if(node->llink->type->expr == 0)
+                gen_code_i(OOME, 0, 0);
+
             gen_code_i(OFFSET, 0, 0);
             break;
 

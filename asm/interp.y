@@ -181,7 +181,7 @@ char*opcode_name[]={"OP_NULL","LOD","LDX","LDXB","LDA","LITI",
 	"NOT", "OR", "AND", "CVTI","CVTF",
 	"JPC","JPCR","JMP","JPT","JPTR",
 	"INT","INCI","INCF","DECI","DECF", "SUP","CAL","ADDR", 
-	"RET", "MINUSI","MINUSF","LDI","LDIB","POP", "CHK"} ;
+	"RET", "MINUSI","MINUSF","LDI","LDIB","POP", "CHK", "OOME"} ;
 
 int search_opcode(char*s)
 {
