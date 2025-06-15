@@ -158,7 +158,7 @@ void gen_expression(A_NODE *node)
         case N_EXP_ARRAY:
             gen_expression(node->llink);
             gen_expression(node->rlink);
-            // gen_code_i(CHK,0,node->llink->type->expr);
+            gen_code_i(CHK,0,node->llink->type->expr);
             if (node->type->size > 1) {
                 gen_code_i(LITI, 0, node->type->size);
                 gen_code_i(MULI, 0, 0);
@@ -532,7 +532,7 @@ void gen_expression_left(A_NODE *node)
         case N_EXP_ARRAY:
             gen_expression(node->llink);
             gen_expression(node->rlink);
-            // gen_code_i(CHK, 0, node->llink->type->expr);
+            gen_code_i(CHK, 0, node->llink->type->expr);
             if (node->type->size > 1) {
                 gen_code_i(LITI, 0, node->type->size);
                 gen_code_i(MULI, 0, 0);

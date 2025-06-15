@@ -172,6 +172,8 @@ void interp()
 				break;
 			}
 			break;
+                case CHK:
+                        if(stack[t] < 0 || stack[t] >= i.a) runtime_error(2, p); break;
 		default: runtime_error(100,p);
 			break;
  	    	}
