@@ -121,7 +121,7 @@ void gen_expression(A_NODE *node)
                         case T_UNION:
                             gen_code_i(LDA, id->level, id->address);
                             i = id->type->size;
-                            gen_code_i(LDI, 0, i % 4 ? i / 4 + 1 : i / 4);
+                            gen_code_i(LDI, 0, 0);
                             break;
                         default:
                             gen_error(11, id->line);
@@ -169,7 +169,7 @@ void gen_expression(A_NODE *node)
                 if (i == 1)
                     gen_code_i(LDIB, 0, 0);
                 else
-                    gen_code_i(LDI, 0, i % 4 ? i / 4 + 1 : i / 4);
+                    gen_code_i(LDI, 0, 0);
             }
             break;
 
@@ -202,7 +202,7 @@ void gen_expression(A_NODE *node)
                 if (i == 1)
                     gen_code_i(LDIB, 0, 0);
                 else
-                    gen_code_i(LDI, 0, i % 4 ? i / 4 + 1 : i / 4);
+                    gen_code_i(LDI, 0, 0);
             }
             break;
 
@@ -218,7 +218,7 @@ void gen_expression(A_NODE *node)
                 if (i == 1)
                     gen_code_i(LDIB, 0, 0);
                 else
-                    gen_code_i(LDI, 0, i % 4 ? i / 4 + 1 : i / 4);
+                    gen_code_i(LDI, 0, 0);
             }
             break;
 
@@ -240,7 +240,7 @@ void gen_expression(A_NODE *node)
             if (node->type->size == 1)
                 gen_code_i(STOB, 0, 0);
             else
-                gen_code_i(STO, 0, 1);
+                gen_code_i(STO, 0, 0);
             break;
 
         case N_EXP_POST_DEC:
@@ -250,7 +250,7 @@ void gen_expression(A_NODE *node)
             if (node->type->size == 1)
                 gen_code_i(LDXB, 0, 0);
             else
-                gen_code_i(LDX, 0, 1);
+                gen_code_i(LDX, 0, 0);
             if (isPointerOrArrayType(node->type)) {
                 gen_code_i(LITI, 0, node->type->element_type->size);
                 gen_code_i(SUBI, 0, 0);
@@ -261,7 +261,7 @@ void gen_expression(A_NODE *node)
             if (node->type->size == 1)
                 gen_code_i(STOB, 0, 0);
             else
-                gen_code_i(STO, 0, 1);
+                gen_code_i(STO, 0, 0);
             break;
 
         case N_EXP_PRE_INC:
@@ -270,7 +270,7 @@ void gen_expression(A_NODE *node)
             if (node->type->size == 1)
                 gen_code_i(LDXB, 0, 0);
             else
-                gen_code_i(LDX, 0, 1);
+                gen_code_i(LDX, 0, 0);
             if (isPointerOrArrayType(node->type)) {
                 gen_code_i(LITI, 0, node->type->element_type->size);
                 gen_code_i(ADDI, 0, 0);
@@ -281,7 +281,7 @@ void gen_expression(A_NODE *node)
             if (node->type->size == 1)
                 gen_code_i(STXB, 0, 0);
             else
-                gen_code_i(STX, 0, 1);
+                gen_code_i(STX, 0, 0);
             break;
 
         case N_EXP_PRE_DEC:
@@ -290,7 +290,7 @@ void gen_expression(A_NODE *node)
             if (node->type->size == 1)
                 gen_code_i(LDXB, 0, 0);
             else
-                gen_code_i(LDX, 0, 1);
+                gen_code_i(LDX, 0, 0);
             if (isPointerOrArrayType(node->type)) {
                 gen_code_i(LITI, 0, node->type->element_type->size);
                 gen_code_i(SUBI, 0, 0);
@@ -301,7 +301,7 @@ void gen_expression(A_NODE *node)
             if (node->type->size == 1)
                 gen_code_i(STXB, 0, 0);
             else
-                gen_code_i(STX, 0, 1);
+                gen_code_i(STX, 0, 0);
             break;
 
         case N_EXP_NOT:
@@ -331,7 +331,7 @@ void gen_expression(A_NODE *node)
             if (i == 1)
                 gen_code_i(LDIB, 0, 0);
             else
-                gen_code_i(LDI, 0, i % 4 ? i / 4 + 1 : i / 4);
+                gen_code_i(LDI, 0, 0);
             break;
 
         case N_EXP_SIZE_EXP:
@@ -461,14 +461,14 @@ void gen_expression(A_NODE *node)
 
         case N_EXP_AND:
             gen_expression(node->llink);
-            gen_code_i(JPCR, 0, i = get_label());
+            gen_code_l(JPCR, 0, i = get_label());
             gen_expression(node->rlink);
             gen_label_number(i);
             break;
 
         case N_EXP_OR:
             gen_expression(node->llink);
-            gen_code_i(JPTR, 0, i = get_label());
+            gen_code_l(JPTR, 0, i = get_label());
             gen_expression(node->rlink);
             gen_label_number(i);
             break;
@@ -480,7 +480,7 @@ void gen_expression(A_NODE *node)
             if (i == 1)
                 gen_code_i(STXB, 0, 0);
             else
-                gen_code_i(STX, 0, i % 4 ? i / 4 + 1 : i / 4);
+                gen_code_i(STX, 0, 0);
             break;
 
         default:
@@ -670,16 +670,16 @@ void gen_statement(A_NODE *node, int cont_label, int break_label, A_SWITCH sw[],
 
         case N_STMT_IF:
             gen_expression(node->llink);
-            gen_code_i(JPC, 0, l1 = get_label());
+            gen_code_l(JPC, 0, l1 = get_label());
             gen_statement(node->rlink, cont_label, break_label, 0, 0);
             gen_label_number(l1);
             break;
 
         case N_STMT_IF_ELSE:
             gen_expression(node->llink);
-            gen_code_i(JPC, 0, l1 = get_label());
+            gen_code_l(JPC, 0, l1 = get_label());
             gen_statement(node->clink, cont_label, break_label, 0, 0);
-            gen_code_i(JMP, 0, l2 = get_label());
+            gen_code_l(JMP, 0, l2 = get_label());
             gen_label_number(l1);
             gen_statement(node->rlink, cont_label, break_label, 0, 0);
             gen_label_number(l2);
@@ -687,8 +687,8 @@ void gen_statement(A_NODE *node, int cont_label, int break_label, A_SWITCH sw[],
 
         case N_STMT_SWITCH:
             gen_expression(node->llink);
-            gen_code_i(SWITCH, 0, l1 = get_label());
-            gen_code_i(JMP, 0, l2 = get_label());
+            gen_code_l(SWITCH, 0, l1 = get_label());
+            gen_code_l(JMP, 0, l2 = get_label());
             gen_statement(node->rlink, cont_label, l2, switch_table, &switch_no);
             gen_label_number(l1);
             for (i = 1; i <= switch_no; i++) {
@@ -696,7 +696,7 @@ void gen_statement(A_NODE *node, int cont_label, int break_label, A_SWITCH sw[],
                     gen_code_i(SWVALUE, 0, switch_table[i].val);
                 else
                     gen_code_i(SWDEFAULT, 0, 0);
-                gen_code_i(SWLABEL, 0, switch_table[i].label);
+                gen_code_l(SWLABEL, 0, switch_table[i].label);
             }
             gen_code_i(SWEND, 0, 0);
             gen_label_number(l2);
@@ -706,10 +706,10 @@ void gen_statement(A_NODE *node, int cont_label, int break_label, A_SWITCH sw[],
             l3 = get_label();
             gen_label_number(l1 = get_label());
             gen_expression(node->llink);
-            gen_code_i(JPC, 0, l2 = get_label());
+            gen_code_l(JPC, 0, l2 = get_label());
             gen_statement(node->rlink, l3, l2, 0, 0);
             gen_label_number(l3);
-            gen_code_i(JMP, 0, l1);
+            gen_code_l(JMP, 0, l1);
             gen_label_number(l2);
             break;
 
@@ -720,7 +720,7 @@ void gen_statement(A_NODE *node, int cont_label, int break_label, A_SWITCH sw[],
             gen_statement(node->llink, l2, l3, 0, 0);
             gen_label_number(l2);
             gen_expression(node->rlink);
-            gen_code_i(JPT, 0, l1);
+            gen_code_l(JPT, 0, l1);
             gen_label_number(l3);
             break;
 
@@ -737,7 +737,7 @@ void gen_statement(A_NODE *node, int cont_label, int break_label, A_SWITCH sw[],
             l2 = get_label();
             if (n->clink) {
                 gen_expression(n->clink);
-                gen_code_i(JPC, 0, l2);
+                gen_code_l(JPC, 0, l2);
             }
             gen_statement(node->rlink, l3, l2, 0, 0);
             gen_label_number(l3);
@@ -747,20 +747,20 @@ void gen_statement(A_NODE *node, int cont_label, int break_label, A_SWITCH sw[],
                 if (i)
                     gen_code_i(POP, 0, i % 4 ? i / 4 + 1 : i / 4);
             }
-            gen_code_i(JMP, 0, l1);
+            gen_code_l(JMP, 0, l1);
             gen_label_number(l2);
             break;
 
         case N_STMT_CONTINUE:
             if (cont_label)
-                gen_code_i(JMP, 0, cont_label);
+                gen_code_l(JMP, 0, cont_label);
             else
                 gen_error(22, node->line);
             break;
 
         case N_STMT_BREAK:
             if (break_label)
-                gen_code_i(JMP, 0, break_label);
+                gen_code_l(JMP, 0, break_label);
             else
                 gen_error(23, node->line);
             break;
@@ -772,7 +772,7 @@ void gen_statement(A_NODE *node, int cont_label, int break_label, A_SWITCH sw[],
                 if (i % 4) i = i / 4 * 4 + 4;
                 gen_code_i(LDA, 1, -i);
                 gen_expression(n);
-                gen_code_i(STO, 0, i / 4);
+                gen_code_i(STO, 0, 0);
             }
             gen_code_i(RET, 0, 0);
             break;
