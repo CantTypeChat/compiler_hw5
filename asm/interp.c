@@ -34,6 +34,7 @@ void runtime_error(int i,int a)
 	case 2: printf("array out of bound \n");break;
 	case 3: printf("stack overflow \n");break;
 	case 4: printf("unknown error in switch\n");break;
+        case 5: printf("memory out of bound \n");break;
 	case 100: printf("fatal error: unknown opcode\n");break;
 	default: printf("unknown\n");break;
    }
@@ -90,7 +91,8 @@ void interp()
 			*(stack_c+stack[t])=stack[t+1];
 			stack[t]=stack[t+1];
 			break;
-		case OFFSET: t--; stack[t]=stack[t]+stack[t+1];break;
+                case OFFSET: if((stack[t]+stack[t-1]) / 4 >= STACK_MAX) runtime_error(5, p);
+                                 t--; stack[t]=stack[t]+stack[t+1];break;
 		case MOD: if (stack[t]==0) 
 				runtime_error(1,p); 
 			else { t--; stack[t]=stack[t]%stack[t+1];}
