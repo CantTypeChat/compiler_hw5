@@ -3,7 +3,7 @@ int main() {
     int n;
     int i;
     scanf("%d", &n);
-    if(n < 1) return 0;
+    if(n < 1 || n > 27) return 0;
     p = malloc(n);
     for(i = 0; i < n-1; i++)
         p[i] = (char) ('a' + i);

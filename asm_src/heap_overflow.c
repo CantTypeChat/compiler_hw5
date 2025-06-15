@@ -4,6 +4,7 @@ int main() {
     int i;
     scanf("%d", &n);
     p = (int*) malloc(sizeof(int) * n);
+    i = 0;
     while(++i)
         printf("[%d]: %d\n", i, p[i] = i);
     return 0;
