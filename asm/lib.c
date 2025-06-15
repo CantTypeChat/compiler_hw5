@@ -8,10 +8,10 @@ void lib_scanf();
 void lib_malloc();
 void lib_malloc() 
 {	int j;
-	j=stack[t+3];
-	if (j%4) j=j/4*4+4;
-	hp=hp-j/4;
-	stack[--t]=hp*4;
+	j=stack[t+3]; // stack[t+3]: malloc() function call parameter position
+	if (j%4) j=j/4*4+4; // allign malloc size to 32bit memory
+	hp=hp-j/4; // hp-j/4: allocated heap space: j/4 ~ hp
+	stack[--t]=hp*4; // save heap pointer address to stack
 }void lib_printf()
 {	char *s,c,*ss;
 	int i,w=0;
