@@ -488,7 +488,7 @@ int sem_statement(
             break;
         case N_STMT_BREAK:
             if(brk == FALSE)
-                semantic_error(75, node->line);
+                semantic_error(73, node->line);
             break;
         case N_STMT_RETURN:
             if(node->clink) {
