@@ -1,18 +1,10 @@
 
-int comp(int, int);
 int  partition(int [], int, int, int (*)(int, int));
 void quick_sort(int[], int, int, int (*)(int, int));
 void swap(int*, int*);
 
-int cmp_asc(int a, int b)
-{
-    return a > b;
-}
-
-int cmp_dsc(int a, int b)
-{
-    return a < b;
-}
+int cmp_asc(int a, int b) { return a > b;}
+int cmp_dsc(int a, int b) { return a < b;}
 
 
 int main() {
